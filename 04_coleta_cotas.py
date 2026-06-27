@@ -43,7 +43,7 @@ ESPECTRO_IDEOLOGICO = {
     "PP": "Direita", "PL": "Direita", "REPUBLICANOS": "Direita",
     "UNIÃO": "Direita", "NOVO": "Direita",
     "SOLIDARIEDADE": "Direita", "AVANTE": "Centro", 
-    "PRD": "Direita", "AGIR": "Centro-Direita",
+    "PRD": "Direita", "AGIR": "Centro-Direita", "MISSÃO": "Direita"
 }
 
 

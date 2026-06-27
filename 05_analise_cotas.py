@@ -58,7 +58,7 @@ ESPECTRO_IDEOLOGICO = {
     "PP": "Direita", "PL": "Direita", "PR": "Direita", "REPUBLICANOS": "Direita", "PRB": "Direita",
     "UNIÃO": "Direita", "PSL": "Direita", "DEM": "Direita", "NOVO": "Direita", 
     "SOLIDARIEDADE": "Direita", "PRD": "Direita", "PATRIOTA": "Direita", 
-    "PATRI": "Direita", "PTB": "Direita", "PSC": "Direita"
+    "PATRI": "Direita", "PTB": "Direita", "PSC": "Direita", "MISSÃO": "Direita"
 }
 
 plt.rcParams.update({
