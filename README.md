@@ -1,7 +1,7 @@
 # Congresso em Dados
 ### Um portfólio de análise sobre transparência parlamentar brasileira (2019–2025)
  
-> Desenvolvido como portfólio para a área de dados, com foco em civic tech e transparência pública. Inspirado na missão do [De Olho em Você](https://deolhoemvoce.com.br).
+> Desenvolvido como portfólio para a área de dados, com foco em civic tech e transparência pública. Inspirado no site do [De Olho em Você](https://deolhoemvoce.com.br).
  
 **Autor:** Pedro Solon Assis 
 **Formação:** Relações Internacionais | Analista de Dados
