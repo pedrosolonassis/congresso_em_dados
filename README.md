@@ -39,7 +39,7 @@ A lógica da sequência é esta:
 **Projeto 2** pergunta: *como os deputados gastam a própria cota de gabinete?*  
 **Projeto 3** pergunta: *esse gasto se traduz em trabalho legislativo?*
  
-Juntos, os três projetos cobrem os dois principais fluxos de recursos parlamentares — o dinheiro que os deputados **enviam para seus redutos eleitorais** (emendas) e o dinheiro que eles **gastam com a própria estrutura de trabalho** (CEAP) — e tentam confrontar esse custo com o que é efetivamente produzido dentro do Congresso.
+Juntos, os três projetos cobrem os dois principais fluxos de recursos parlamentares - o dinheiro que os deputados **enviam para seus redutos eleitorais** (emendas) e o dinheiro que eles **gastam com a própria estrutura de trabalho** (CEAP) - e tentam confrontar esse custo com o que é efetivamente produzido dentro do Congresso.
  
 ---
  
@@ -81,7 +81,7 @@ congresso-em-dados/
 ---
 ---
  
-# Projeto 1 — Raio-X das Emendas Pix
+# Projeto 1: Raio-X das Emendas Pix
 ### Poder orçamentário e rastreabilidade no Congresso (2020–2025)
  
 ## O que são as Emendas Pix?
@@ -172,8 +172,8 @@ Entre as emendas com UF identificada, os estados que mais apareceram como destin
 ---
 ---
  
-# Projeto 2 — A Bancada dos Gastos
-### Transparência e prioridades no uso da Cota Parlamentar (CEAP) — 2019 a 2025
+# Projeto 2: A Bancada dos Gastos
+### Transparência e prioridades no uso da Cota Parlamentar (CEAP) - 2019 a 2025
  
 O Projeto 1 mostrou para onde os parlamentares **enviam** o dinheiro público. Este projeto vira a câmera para dentro do Congresso e pergunta: **como eles gastam os recursos destinados à própria estrutura de trabalho?**
  
@@ -240,7 +240,7 @@ A CEAP cobre o *quanto* foi gasto e *em quê*. O que ela não informa:
 ---
 ---
  
-# Projeto 3 — A Eficiência dos Mandatos
+# Projeto 3: A Eficiência dos Mandatos
 ### Custo da cota parlamentar versus produção legislativa (2019–2025)
  
 O Projeto 2 revelou quanto cada deputado gasta na cota parlamentar. Este projeto fecha o ciclo com a pergunta mais difícil: **Esse gasto se converte em trabalho legislativo?**
@@ -251,8 +251,8 @@ Para isso, cruzamos o custo total acumulado de cada parlamentar na CEAP com o vo
  
 | Item | Detalhe |
 |---|---|
-| **Fonte — Custo** | `cotas_parlamentares.parquet` gerado pelo Projeto 2 |
-| **Fonte — Produção** | API Dados Abertos da Câmara (`/api/v2/proposicoes`) |
+| **Fonte Custo** | `cotas_parlamentares.parquet` gerado pelo Projeto 2 |
+| **Fonte Produção** | API Dados Abertos da Câmara (`/api/v2/proposicoes`) |
 | **Período** | 2019 a 2025 |
 | **Parlamentares analisados** | 496 |
 | **Custo total analisado** | R$ 1,15 bilhão |
@@ -261,7 +261,7 @@ Para isso, cruzamos o custo total acumulado de cada parlamentar na CEAP com o vo
  
 ### Como a produção legislativa é medida
  
-O script consulta o endpoint `/api/v2/proposicoes` com o parâmetro `idDeputadoAutor` para cada deputado e acumula o total retornado pelo header `X-Total-Count` — sem fazer download das proposições, apenas contando. Uma requisição por deputado por ano, com `time.sleep(0.5)` entre chamadas para respeitar o rate limit da API.
+O script consulta o endpoint `/api/v2/proposicoes` com o parâmetro `idDeputadoAutor` para cada deputado e acumula o total retornado pelo header `X-Total-Count`, sem fazer download das proposições, apenas contando. Uma requisição por deputado por ano, com `time.sleep(0.5)` entre chamadas para respeitar o rate limit da API.
  
 **Importante:** "Proposições" abrange **todo tipo de documento** que o parlamentar assina como autor, como: projetos de lei, requerimentos, indicações, emendas a projetos alheios, recursos e entre outros. Não é um índice exclusivo de PLs originais, o que tem implicações analíticas relevantes discutidas abaixo. Ou seja, **o projeto não tem como mensurar a importância de cada proposição, ainda mais sendo algo relativo, mas sim visa ter uma dimensão do uso do dinheiro público pelos representates do povo.**
  
@@ -350,12 +350,12 @@ Outras extensões relevantes:
  
 ## Fontes de Dados
  
-- [Portal da Transparência — Emendas Parlamentares](https://portaldatransparencia.gov.br/emendas)
-- [EC 105/2019 — Emendas Pix](https://www.planalto.gov.br/ccivil_03/constituicao/emendas/emc/emc105.htm)
-- [Câmara dos Deputados — Dados de Cotas](http://www.camara.leg.br/transparencia/gastos-parlamentares)
+- [Portal da Transparência - Emendas Parlamentares](https://portaldatransparencia.gov.br/emendas)
+- [EC 105/2019 - Emendas Pix](https://www.planalto.gov.br/ccivil_03/constituicao/emendas/emc/emc105.htm)
+- [Câmara dos Deputados - Dados de Cotas](http://www.camara.leg.br/transparencia/gastos-parlamentares)
 - [Portal de Dados Abertos da Câmara](https://dadosabertos.camara.leg.br)
-- [Siga Brasil — Senado Federal](https://www12.senado.leg.br/orcamento/sigabrasil)
-- [De Olho em Você — Transparência Parlamentar](https://deolhoemvoce.com.br)
+- [Siga Brasil - Senado Federal](https://www12.senado.leg.br/orcamento/sigabrasil)
+- [De Olho em Você - Transparência Parlamentar](https://deolhoemvoce.com.br)
 ---
  
 *Todos os dados são públicos e foram obtidos de fontes governamentais oficiais.*
