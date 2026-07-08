@@ -30,7 +30,6 @@ log = logging.getLogger(__name__)
 INPUT_FILE = "outputs/cotas_parlamentares.parquet"
 OUTPUT_DIR = "outputs"
 
-# Paleta ideológica
 CORES_ESPECTRO = {
     "Esquerda":        "#e63946",
     "Centro-Esquerda": "#f4a261",
@@ -76,20 +75,17 @@ plt.rcParams.update({
 def limpar_categoria(descricao):
     texto = str(descricao).upper()
 
-    # ── BIG 6 ──────────────────────────────────────────────────────────
     if 'DIVULGA' in texto:                                   return 'Publicidade e Marketing'
     if 'AUTOMOTOR' in texto:                                 return 'Locação de Veículos'
     if 'ESCRIT' in texto or 'MANUTEN' in texto:              return 'Escritório de Apoio'
     if 'COMBUST' in texto:                                   return 'Combustíveis e Lubrificantes'
     if 'CONSULTORIA' in texto or 'PESQUISA' in texto:        return 'Consultorias e Pesquisas'
 
-    # ── PASSAGENS (blindado contra encoding corrompido) ─────────────────
     if 'TERRESTRE' in texto or 'FLUVIAIS' in texto or 'MARITIMA' in texto or 'MARÍTIMA' in texto:
                                                              return 'Passagens Terrestres e Fluviais'
     if 'PASSAGEM' in texto or 'PASSAGEN' in texto or 'AÉRE' in texto or 'AÃRE' in texto:
                                                              return 'Passagens Aéreas'
 
-    # ── DEMAIS ──────────────────────────────────────────────────────────
     if 'ALIMENTA' in texto:                                  return 'Alimentação'
     if 'HOSPEDAGEM' in texto:                                return 'Hospedagem'
     if 'AERONAVE' in texto:                                  return 'Locação de Aeronaves'
@@ -112,10 +108,8 @@ def carregar_dados():
     
     df = pd.read_parquet(INPUT_FILE)
     
-    # 1. Blindagem: Remove lixo invisível (BOM) e força colunas para minúsculo
     df.columns = [str(c).replace('ï»¿', '').replace('"', '').strip().lower() for c in df.columns]
     
-    # 2. Dicionário de Dados Mestre: Renomeia as colunas cruas para o padrão BI
     df = df.rename(columns={
         'txnomeparlamentar': 'parlamentar',
         'txtdescricao': 'tipo_despesa',
@@ -142,12 +136,9 @@ def carregar_dados():
         for prep in preposicoes:
             df['parlamentar'] = df['parlamentar'].str.replace(prep, prep.lower(), regex=False)
 
-    # 3. A Peça Faltante: Padronização histórica e criação do espectro
     if 'partido' in df.columns:
-        # Coloca tudo em maiúsculo para garantir o padrão
         df['partido'] = df['partido'].str.upper()
         
-        # Unifica partidos que mudaram de nome ou se fundiram
         padrao_historico = {
             "PATRI": "PATRIOTA",
             "PRB": "REPUBLICANOS",
@@ -162,22 +153,17 @@ def carregar_dados():
         }
         df['partido'] = df['partido'].replace(padrao_historico)
         
-        # Mapeia o espectro
         df['espectro'] = df['partido'].map(ESPECTRO_IDEOLOGICO).fillna('Não classificado')
     else:
         df['espectro'] = 'Não classificado'
 
-    # 4. Aplica a limpeza nas categorias (As "Big 6")
     if 'tipo_despesa' in df.columns:
         df['tipo_despesa'] = df['tipo_despesa'].apply(limpar_categoria)
 
-    # 5. Salva a versão limpa e definitiva no disco para o Power BI
     df.to_parquet(INPUT_FILE, index=False)
         
     log.info(f"Dados carregados e limpos: {len(df):,} registros")
     return df
-
-# ── Análise 1: Distribuição por espectro ideológico ───────────────────────────
 
 def gasto_por_espectro(df: pd.DataFrame) -> pd.DataFrame:
     query = """
@@ -195,9 +181,6 @@ def gasto_por_espectro(df: pd.DataFrame) -> pd.DataFrame:
     """
     return duckdb.query(query).df()
 
-
-# ── Análise 2: Categorias de gasto por espectro ───────────────────────────────
-
 def categorias_por_espectro(df: pd.DataFrame) -> pd.DataFrame:
     query = """
         SELECT
@@ -214,14 +197,10 @@ def categorias_por_espectro(df: pd.DataFrame) -> pd.DataFrame:
     """
     df_raw = duckdb.query(query).df()
 
-    # Normaliza por espectro (% do total de cada espectro)
     df_raw["perc"] = df_raw.groupby("espectro")["total"].transform(
         lambda x: x / x.sum() * 100
     )
     return df_raw
-
-
-# ── Análise 3: Top/Bottom parlamentares por eficiência ────────────────────────
 
 def ranking_gastos(df: pd.DataFrame) -> pd.DataFrame:
     query = """
@@ -240,23 +219,17 @@ def ranking_gastos(df: pd.DataFrame) -> pd.DataFrame:
     """
     return duckdb.query(query).df()
 
-
-# ── Visualização 1: Heatmap de categorias por espectro ────────────────────────
-
 def grafico_heatmap_categorias(df_cat: pd.DataFrame):
-    # Pivota: linhas = categorias, colunas = espectro
     pivot = df_cat.pivot_table(
         index="tipo_despesa", columns="espectro", values="perc", aggfunc="sum", fill_value=0
     )
 
-    # Filtra as 12 maiores categorias por total
     top_cats = (
         df_cat.groupby("tipo_despesa")["total"].sum()
         .nlargest(12).index.tolist()
     )
     pivot = pivot.loc[pivot.index.isin(top_cats)]
 
-    # Ordena colunas da esquerda para direita
     ordem_espectro = ["Esquerda", "Centro-Esquerda", "Centro", "Centro-Direita", "Direita"]
     pivot = pivot[[c for c in ordem_espectro if c in pivot.columns]]
 
@@ -282,40 +255,6 @@ def grafico_heatmap_categorias(df_cat: pd.DataFrame):
     log.info(f"  Heatmap salvo: {caminho}")
 
 
-# ── Visualização 2: Boxplot de gasto por parlamentar, por espectro ────────────
-
-def grafico_boxplot_espectro(df_rank: pd.DataFrame):
-    ordem = ["Esquerda", "Centro-Esquerda", "Centro", "Centro-Direita", "Direita"]
-    df_plot = df_rank[df_rank["espectro"].isin(ordem)].copy()
-
-    fig, ax = plt.subplots(figsize=(12, 7))
-    palette = {e: CORES_ESPECTRO[e] for e in ordem if e in CORES_ESPECTRO}
-
-    sns.boxplot(
-        data=df_plot, x="espectro", y="total_gasto",
-        order=ordem, palette=palette, ax=ax,
-        flierprops=dict(marker="o", markersize=3, alpha=0.3),
-        width=0.5,
-    )
-
-    ax.set_title(
-        "📦 Distribuição de Gastos da Cota por Parlamentar\nAgrupado por Espectro Ideológico",
-        fontsize=13, fontweight="bold", pad=15
-    )
-    ax.set_xlabel("Espectro Político")
-    ax.set_ylabel("Total Gasto (R$)")
-    ax.yaxis.set_major_formatter(
-        plt.FuncFormatter(lambda x, _: f"R$ {x/1e3:.0f}k")
-    )
-    ax.grid(axis="y", alpha=0.3)
-    plt.tight_layout()
-
-    caminho = os.path.join(OUTPUT_DIR, "06_boxplot_gasto_espectro.png")
-    plt.savefig(caminho, dpi=150, bbox_inches="tight", facecolor="#0d1117")
-    plt.close()
-    log.info(f"  Boxplot salvo: {caminho}")
-
-
 def main():
     log.info("=" * 60)
     log.info("ANÁLISE: Eficiência Partidária na Cota Parlamentar")
@@ -337,11 +276,9 @@ def main():
     df_rank = ranking_gastos(df)
     grafico_boxplot_espectro(df_rank)
 
-    # Exporta
     df_rank.to_csv(os.path.join(OUTPUT_DIR, "ranking_gastos_parlamentares.csv"),
                    index=False, encoding="utf-8-sig")
     log.info("\n✅ Análise de cotas concluída!")
-
 
 if __name__ == "__main__":
     main()

@@ -2,11 +2,8 @@ import duckdb
 
 print("Iniciando motor analítico do DuckDB...\n")
 
-# Conecta ao DuckDB em memória
 con = duckdb.connect(database=':memory:')
 
-# 1. Criamos uma "View" (Tabela Virtual) lendo o seu CSV e ajustando os nomes
-# Usamos a função RIGHT() do SQL para pegar a sigla do estado, igual fizemos no DAX!
 con.execute("""
     CREATE VIEW emendas_pix AS 
     SELECT 
@@ -21,7 +18,6 @@ con.execute("""
     FROM read_csv_auto('outputs/emendas_pix_2014_2025.csv')
 """)
 
-# 2. Rodamos a Query Avançada de Crescimento Anual (Copiada do seu arquivo .sql)
 query_crescimento = """
     SELECT
         ano_coleta AS ano,
@@ -41,6 +37,5 @@ query_crescimento = """
 print("📊 RESULTADO DA QUERY DE CRESCIMENTO ANUAL (WINDOW FUNCTION):")
 resultado = con.execute(query_crescimento).df()
 
-# Formatando os valores para ficar bonito no terminal (em Milhões/Bilhões)
 resultado['total_pago'] = resultado['total_pago'].apply(lambda x: f"R$ {x/1e9:.2f} Bi" if x > 1e9 else f"R$ {x/1e6:.2f} Mi")
 print(resultado.to_string(index=False))

@@ -20,12 +20,10 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
-# Alterado para ler o CSV caso o Parquet não exista
 INPUT_FILE_CSV = "outputs/emendas_pix_2020_2025.csv"
 OUTPUT_DIR = "outputs"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ── Paleta de cores temática ───────────────────────────────────────────────────
 COR_PRIMARIA   = "#1a1a2e"
 COR_DESTAQUE   = "#e94560"
 COR_SECUNDARIA = "#16213e"
@@ -42,20 +40,17 @@ plt.rcParams.update({
     "font.family":      "monospace",
 })
 
-# ── Carregamento ───────────────────────────────────────────────────────────────
 def carregar_dados() -> pd.DataFrame:
     if not os.path.exists(INPUT_FILE_CSV):
         raise FileNotFoundError(f"Arquivo não encontrado: {INPUT_FILE_CSV}")
     log.info(f"Carregando dados de {INPUT_FILE_CSV}...")
     df = pd.read_csv(INPUT_FILE_CSV)
     
-    # Tratamento rápido: Extrair a UF (Estado) do final da coluna localidadedogasto (Ex: "MANACAPURU - AM" -> "AM")
     df['uf_favorecido'] = df['localidadedogasto'].astype(str).str.split(' - ').str[-1]
     
     log.info(f"  {len(df):,} registros carregados | {df.shape[1]} colunas")
     return df
 
-# ── Análises com DuckDB (SQL inline) ──────────────────────────────────────────
 def analise_por_uf(df: pd.DataFrame) -> pd.DataFrame:
     query = """
         SELECT
@@ -101,23 +96,18 @@ def evolucao_historica(df: pd.DataFrame) -> pd.DataFrame:
     """
     return duckdb.query(query).df()
 
-# ── Visualizações ──────────────────────────────────────────────────────────────
 def grafico_top_estados(df_uf: pd.DataFrame):
     fig, ax = plt.subplots(figsize=(12, 7))
     top = df_uf.head(15).sort_values("total_pago")
 
-    # Alterado: divisão por 1e6 (milhões) em vez de 1e9 (bilhões)
     bars = ax.barh(top["estado"], top["total_pago"] / 1e6, color=COR_DESTAQUE, alpha=0.85)
     
-    # Alterado: formatação para 'M' (milhões) e sem casas decimais (%.0f)
     ax.bar_label(bars, fmt="R$ %.0fM", padding=5, color="white", fontsize=9)
 
     ax.set_title("Top 15 Estados - Emendas Pix Recebidas (2020-2025)", fontsize=14, fontweight="bold", pad=15)
     
-    # Alterado: texto do eixo X
     ax.set_xlabel("Valor Pago (em milhões R$)")
     
-    # Alterado: escala do eixo X para 'M'
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"R$ {x:.0f}M"))
     
     ax.grid(axis="x", alpha=0.3)
@@ -143,10 +133,9 @@ def grafico_evolucao_historica(df_hist: pd.DataFrame):
 
 def grafico_top_parlamentares(df_parl: pd.DataFrame):
     fig, ax = plt.subplots(figsize=(12, 8))
-    # Adicionamos o .copy() para poder manipular os dados com segurança
+
     df_plot = df_parl.head(15).sort_values("total_pago").copy()
 
-    # ── Mapeamento manual de partidos (Data Blending simplificado) ──
     partidos = {
         "JAYME CAMPOS": "UNIÃO",
         "MARCOS ROGERIO": "PL",
@@ -165,15 +154,12 @@ def grafico_top_parlamentares(df_parl: pd.DataFrame):
         "CHICO RODRIGUES": "PSB"
     }
     
-    # Função para juntar o Nome com a Sigla do Partido
     def formatar_nome(nome):
         partido = partidos.get(nome, "")
         return f"{nome} ({partido})" if partido else nome
         
-    # Aplicando a nova regra visual na coluna
     df_plot["parlamentar_label"] = df_plot["parlamentar"].apply(formatar_nome)
 
-    # Plotando agora usando a coluna 'parlamentar_label'
     bars = ax.barh(df_plot["parlamentar_label"], df_plot["total_pago"] / 1e6, color=COR_DESTAQUE, alpha=0.9)
     ax.bar_label(bars, fmt="R$ %.0fM", padding=5, color="white", fontsize=8)
 

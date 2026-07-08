@@ -33,8 +33,6 @@ ANOS_COTAS    = list(range(2019, 2026))
 BASE_COTAS    = "http://www.camara.leg.br/cotas/Ano-{ano}.csv.zip"
 API_DEPUTADOS = "https://dadosabertos.camara.leg.br/api/v2/deputados"
 
-# Mapeamento ideológico simplificado (baseado em literatura acadêmica)
-# Fonte de referência: POWER & ZUCCO (2012) - Estimating Ideology of Brazilian Legislative Parties
 ESPECTRO_IDEOLOGICO = {
     "PSOL": "Esquerda", "PT": "Esquerda", "PCdoB": "Esquerda",
     "PDT": "Centro-Esquerda", "PSB": "Centro-Esquerda", "REDE": "Centro-Esquerda",
@@ -60,15 +58,10 @@ def baixar_cotas_ano(ano: int) -> pd.DataFrame:
             nome_csv = z.namelist()[0]
             with z.open(nome_csv) as f:
                 try:
-                    # 1. Tenta ler com UTF-8 (padrão mais limpo, comum em arquivos recentes do governo)
                     df = pd.read_csv(f, sep=";", encoding="utf-8-sig", low_memory=False)
                 except UnicodeDecodeError:
-                    # 2. Se falhar, volta o cursor do arquivo para o início (byte 0)
                     f.seek(0)
-                    # 3. Lê em latin-1 (padrão antigo do Windows/Governo)
                     df = pd.read_csv(f, sep=";", encoding="latin-1", low_memory=False)
-                    # 4. Força a decodificação correta em todas as células de texto do DataFrame
-                    # Nota: O uso do errors='ignore' evita que o código quebre caso encontre um número ou dado vazio
                     df = df.applymap(lambda x: x.encode('latin1').decode('utf-8', errors='ignore') if isinstance(x, str) else x)
 
         df["ano_referencia"] = ano
@@ -130,7 +123,6 @@ def padronizar_cotas(df: pd.DataFrame) -> pd.DataFrame:
     }
     df = df.rename(columns={k: v for k, v in renomear.items() if k in df.columns})
 
-    # Converte valores
     for col in ["valor_documento", "valor_glosa", "valor_liquido"]:
         if col in df.columns:
             df[col] = (
@@ -140,7 +132,6 @@ def padronizar_cotas(df: pd.DataFrame) -> pd.DataFrame:
             )
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-    # Adiciona espectro ideológico
     if "partido" in df.columns:
         df["espectro"] = df["partido"].map(ESPECTRO_IDEOLOGICO).fillna("Não classificado")
 
@@ -152,7 +143,6 @@ def main():
     log.info("INÍCIO: Coleta de Cotas Parlamentares")
     log.info("=" * 60)
 
-    # 1. Cotas por ano
     frames = []
     for ano in tqdm(ANOS_COTAS, desc="Baixando cotas"):
         df_ano = baixar_cotas_ano(ano)
@@ -167,10 +157,8 @@ def main():
     df_cotas = pd.concat(frames, ignore_index=True)
     df_cotas = padronizar_cotas(df_cotas)
 
-    # 2. Lista de deputados
     df_deps = buscar_deputados_api()
 
-    # Salva
     df_cotas.to_parquet(os.path.join(OUTPUT_DIR, "cotas_parlamentares.parquet"), index=False)
     df_cotas.to_csv(os.path.join(OUTPUT_DIR, "cotas_parlamentares.csv"),
                     index=False, encoding="utf-8-sig")

@@ -32,9 +32,6 @@ log = logging.getLogger(__name__)
 OUTPUT_DIR = "outputs"
 API_PROPOSICOES = "https://dadosabertos.camara.leg.br/api/v2/proposicoes"
 
-
-# ── Coleta de proposições via API da Câmara ───────────────────────────────────
-
 def buscar_proposicoes_deputado(id_dep: int, ano: int) -> int:
     """
     Retorna o número de proposições apresentadas por um deputado num ano.
@@ -82,11 +79,7 @@ def coletar_producao_legislativa(df_deps: pd.DataFrame, anos: list) -> pd.DataFr
     return pd.DataFrame(resultados)
 
 
-# ── Análise de custo vs. produção ─────────────────────────────────────────────
-
 def calcular_custo_mandato(df_cotas: pd.DataFrame) -> pd.DataFrame:
-    # Removemos partido do GROUP BY do custo para evitar duplicados caso o parlamentar mude de partido.
-    # O partido oficial será o que vier da API (df_prod)
     query = """
         SELECT
             parlamentar,
@@ -103,24 +96,19 @@ def correlacionar_custo_producao(df_custo: pd.DataFrame,
                                   df_prod: pd.DataFrame) -> pd.DataFrame:
     """Junta custo do mandato com produção legislativa e aplica faixas de análise."""
     
-    # Merge usando a coluna 'parlamentar'
-    # Agora df_prod traz partido e UF
     df_merged = df_custo.merge(
         df_prod[["parlamentar", "partido", "uf", "total_proposicoes"]], 
         on="parlamentar",
         how="inner"
     )
 
-    # CORREÇÃO 1: Força o arredondamento de 2 casas decimais (centavos) para o Power BI não bugar
     df_merged["custo_cota"] = df_merged["custo_cota"].round(2)
 
-    # Calcula custo por proposição apenas como métrica secundária
     df_merged["custo_por_proposicao"] = (
         df_merged["custo_cota"] /
         df_merged["total_proposicoes"].replace(0, np.nan)
     ).round(2)
 
-    # CORREÇÃO 2: Novas Categorias (Regras de Negócio Ajustadas para 9 faixas)
     def categorizar(row):
         custo = row["custo_cota"]
         prod = row["total_proposicoes"]
@@ -141,7 +129,6 @@ def correlacionar_custo_producao(df_custo: pd.DataFrame,
         else:
             cat_prod = "Alto Volume"
             
-        # Alertas Visuais para Extremos
         if cat_custo == "Alto Custo" and cat_prod == "Baixo Volume":
             return "Alto Custo / Baixo Volume 🔴"
         elif cat_custo == "Baixo Custo" and cat_prod == "Alto Volume":
@@ -151,33 +138,29 @@ def correlacionar_custo_producao(df_custo: pd.DataFrame,
             
         return f"{cat_custo} / {cat_prod}"
 
-    # Note que aqui estou usando 'atividade_volume' conforme estava no seu último print
     df_merged["atividade_volume"] = df_merged.apply(categorizar, axis=1)
     
-    # Preenchemos partidos ou UFs vazios com "N/I" (Não Informado) para evitar erros no Power BI
     df_merged['partido'] = df_merged['partido'].fillna("N/I")
     df_merged['uf'] = df_merged['uf'].fillna("N/I")
     
     return df_merged.sort_values("custo_cota", ascending=False)
 
 
-# ── Visualizações ──────────────────────────────────────────────────────────────
-
 def grafico_scatter_custo_producao(df: pd.DataFrame):
     """Scatter plot: custo do mandato × volume de projetos."""
     
     CORES_CAT = {
-        "Alto Custo / Baixo Volume 🔴": "#e63946",  # Vermelho Alerta
+        "Alto Custo / Baixo Volume 🔴": "#e63946",
         "Alto Custo / Médio Volume 🟡": "#ffb703",
-        "Alto Custo / Alto Volume":     "#e9c46a",  # Amarelo
+        "Alto Custo / Alto Volume":     "#e9c46a",
         
-        "Médio Custo / Baixo Volume":   "#9c89b8",  # Roxo
-        "Médio Custo / Médio Volume":   "#6c757d",  # Cinza Neutro
-        "Médio Custo / Alto Volume":    "#2a9d8f",  # Verde Água
+        "Médio Custo / Baixo Volume":   "#9c89b8",
+        "Médio Custo / Médio Volume":   "#6c757d",
+        "Médio Custo / Alto Volume":    "#2a9d8f",
         
-        "Baixo Custo / Baixo Volume":   "#457b9d",  # Azul
-        "Baixo Custo / Médio Volume":   "#81b29a",  # Verde Claro
-        "Baixo Custo / Alto Volume 🟢": "#2b9348",  # Verde Forte
+        "Baixo Custo / Baixo Volume":   "#457b9d",
+        "Baixo Custo / Médio Volume":   "#81b29a",
+        "Baixo Custo / Alto Volume 🟢": "#2b9348",
     }
 
     fig, ax = plt.subplots(figsize=(14, 8))
@@ -199,7 +182,6 @@ def grafico_scatter_custo_producao(df: pd.DataFrame):
         fontsize=14, fontweight="bold", color="white", pad=15
     )
     
-    # Ajusta a legenda para caber as 9 categorias
     ax.legend(facecolor="#21262d", edgecolor="#30363d", labelcolor="white", 
               fontsize=8, loc='upper right', bbox_to_anchor=(1.25, 1))
     
@@ -224,7 +206,6 @@ def grafico_bancada_dos_gastos(df: pd.DataFrame):
         fontsize=14, fontweight="bold", color="white", y=1.02
     )
 
-    # Gráfico 1: Custo da cota
     ax = axes[0]
     ax.set_facecolor("#161b22")
     nomes = top10["parlamentar"].apply(lambda x: x[:20])
@@ -236,7 +217,6 @@ def grafico_bancada_dos_gastos(df: pd.DataFrame):
     ax.tick_params(colors="#c9d1d9")
     ax.grid(axis="x", alpha=0.2)
 
-    # Gráfico 2: Proposições apresentadas
     ax2 = axes[1]
     ax2.set_facecolor("#161b22")
     bars2 = ax2.barh(nomes[::-1], top10["total_proposicoes"][::-1],
@@ -254,8 +234,6 @@ def grafico_bancada_dos_gastos(df: pd.DataFrame):
     log.info(f"  Bancada dos gastos salvo: {caminho}")
 
 
-# ── Main ───────────────────────────────────────────────────────────────────────
-
 def main():
     log.info("=" * 60)
     log.info("ANÁLISE: A Bancada dos Gastos (CARGA TOTAL)")
@@ -263,14 +241,12 @@ def main():
     
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    # Carrega cotas
     if not os.path.exists("outputs/cotas_parlamentares.parquet"):
         raise FileNotFoundError("Execute coleta_cotas.py primeiro.")
 
     df_cotas = pd.read_parquet("outputs/cotas_parlamentares.parquet")
     df_custo = calcular_custo_mandato(df_cotas)
 
-    # Verifica o cache
     prod_path = "outputs/producao_legislativa.csv"
     recoletar = False
     
@@ -278,7 +254,6 @@ def main():
         log.info("Carregando produção legislativa do cache...")
         df_prod = pd.read_csv(prod_path)
         
-        # PROTEÇÃO: Verifica se o cache é antigo e não tem as colunas partido/uf
         if "partido" not in df_prod.columns or "uf" not in df_prod.columns:
             log.warning("⚠️ O seu cache antigo não possui as colunas 'partido' e 'uf'.")
             log.warning("⚠️ Forçando nova extração para atualizar a estrutura de dados...")
@@ -293,11 +268,9 @@ def main():
 
         df_deps = pd.read_csv(deps_path)
         
-        # O SEGREDO DO FULL LOAD: Pega todos os deputados que tiveram algum gasto
         nomes_com_gastos = df_custo["parlamentar"].unique().tolist()
         df_deps_filtrado = df_deps[df_deps["nome"].isin(nomes_com_gastos)]
 
-        # Passa a lista completa de anos
         df_prod = coletar_producao_legislativa(df_deps_filtrado, anos=list(range(2019, 2026)))
         
         try:
@@ -307,13 +280,10 @@ def main():
             log.error("   FECHE O POWER BI ou EXCEL e rode o script novamente.\n")
             return
 
-    # Correlaciona e visualiza
     df_final = correlacionar_custo_producao(df_custo, df_prod)
     
-    # Exporta a versão final completa (Protegido contra conflitos com o Power BI)
     final_path = os.path.join(OUTPUT_DIR, "custo_vs_producao.csv")
     try:
-        # AQUI ESTÁ A MAGIA: sep=';' e decimal=',' forçam o padrão nativo PT-BR
         df_final.to_csv(final_path, index=False, sep=';', decimal=',', encoding="utf-8-sig")
         log.info("\n✅ Análise da Bancada dos Gastos concluída!")
         log.info(f"   Parlamentares analisados no total: {len(df_final)}")

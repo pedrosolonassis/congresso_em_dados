@@ -4,7 +4,6 @@ import time
 import logging
 import argparse
 
-# Logging estruturado — substitui os print()
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
@@ -30,15 +29,15 @@ def extrair_despesas_deputado(id_deputado: int, ano: int) -> list:
         }
         try:
             resp = requests.get(url, params=params, timeout=15)
-            resp.raise_for_status()          # Lança exceção em qualquer erro HTTP
+            resp.raise_for_status()
             dados = resp.json().get('dados', [])
 
             if not dados:
-                break                        # Última página — para o loop
+                break
 
             todas.extend(dados)
             pagina += 1
-            time.sleep(0.3)                  # Respeita o rate limit da API
+            time.sleep(0.3)
 
         except requests.exceptions.HTTPError as e:
             log.error(f"Deputado {id_deputado} | HTTP {e.response.status_code} na página {pagina}")
@@ -69,7 +68,7 @@ def main(ano: int, ids: list):
                 'Fornecedor':   d.get('nomeFornecedor')
             })
 
-        time.sleep(0.5)   # Pausa extra entre deputados
+        time.sleep(0.5)
 
     if not todas_despesas:
         log.warning("Nenhuma despesa coletada. Verifique os IDs e o ano.")
