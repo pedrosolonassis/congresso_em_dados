@@ -6,6 +6,7 @@
 **Autor:** Pedro Solon Assis 
 **Formação:** Relações Internacionais | Analista de Dados
 **Stack:** Python · SQL · DuckDB · Pandas · Power BI
+**Dashboard Power BI:** https://app.powerbi.com/view?r=eyJrIjoiODQ0MTllZGUtZDkwNS00ZWYyLTlkOWUtZDgwZDBjYjc1ZGE4IiwidCI6ImUzOTFhNDgzLWU4YWUtNDc1NC1iNjRmLTM3YTNjMTJmMTY2YyJ9
  
 ---
 
